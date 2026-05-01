@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <title>Peter Fall</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="screen-orientation" content="landscape" />
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
@@ -99,6 +100,34 @@
     #touch-controls { display: block; }
     .help { display: none; }
   }
+
+  /* ── portrait warning ── */
+  #portrait-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: #0c1410;
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    color: #f5e6a8;
+    font-family: "Press Start 2P", monospace;
+    font-size: 11px;
+    text-align: center;
+    line-height: 2;
+  }
+  #portrait-overlay .rotate-icon {
+    font-size: 48px;
+    animation: spin90 1.2s ease-in-out infinite alternate;
+  }
+  @keyframes spin90 {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(90deg); }
+  }
+  @media (pointer: coarse) and (orientation: portrait) {
+    #portrait-overlay { display: flex; }
+  }
 </style>
 </head>
 <body>
@@ -108,6 +137,11 @@
     <canvas id="game" width="320" height="192"></canvas>
     <canvas id="ui"></canvas>
   </div>
+</div>
+
+<div id="portrait-overlay">
+  <div class="rotate-icon">&#x1F4F1;</div>
+  <div>ROTATE TO PLAY</div>
 </div>
 
 <div id="touch-controls">
@@ -157,6 +191,11 @@ function fitStage() {
 }
 window.addEventListener('resize', fitStage);
 fitStage();
+
+// Request landscape lock on touch devices (silently ignored if unsupported)
+if ('ontouchstart' in window && screen.orientation && screen.orientation.lock) {
+  screen.orientation.lock('landscape').catch(() => {});
+}
 
 // Wait for Press Start 2P before first frame
 let fontReady = false;
