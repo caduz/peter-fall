@@ -176,9 +176,11 @@ let ux = uiCanvas.getContext('2d');
 let S = 1; // current display scale factor
 
 function fitStage() {
-  const pad = 60;
-  const aw = window.innerWidth  - pad;
-  const ah = window.innerHeight - pad;
+  const touch = window.matchMedia('(pointer: coarse)').matches;
+  const hpad  = touch ? 0   : 60;
+  const vpad  = touch ? 140 : 60; // reserve space for touch controls bar
+  const aw = window.innerWidth  - hpad;
+  const ah = window.innerHeight - vpad;
   S = Math.max(1, Math.min(Math.floor(aw / W), Math.floor(ah / H)));
   const dw = W * S, dh = H * S;
   canvas.style.width  = dw + 'px';
