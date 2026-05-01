@@ -45,21 +45,22 @@
     }
     .stage {
       flex: 1;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       border: none; border-radius: 0; box-shadow: none;
     }
     canvas#game {
-      width: auto !important;
+      width: 100% !important;
       height: 100% !important;
-      max-width: 100%;
-      aspect-ratio: 320 / 192;
+      object-fit: contain;
     }
     canvas#ui {
       position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
     }
   }
   .help {
@@ -235,6 +236,7 @@ fitStage();
 if ('ontouchstart' in window && screen.orientation && screen.orientation.lock) {
   screen.orientation.lock('landscape').catch(() => {});
 }
+
 
 // Wait for Press Start 2P before first frame
 let fontReady = false;
@@ -427,6 +429,9 @@ const AudioBus = (() => {
     step()   { noise({dur:0.04,vol:0.06,hp:1200}); },
   };
 })();
+
+// Unlock AudioContext on first touch (required by mobile browsers)
+document.addEventListener('touchstart', () => AudioBus.resume(), {once: true, passive: true});
 
 // ── screen setup ─────────────────────────────────────────────────────────────
 function enterScreen(idx, fromLeft) {
@@ -623,7 +628,7 @@ function update(dt){
     }
     if(e.k==='treasure'&&rectOverlap(hb,e)){
       const v=treasureValue(e.kind); STATE.score+=v;
-      STATE.treasuresTaken.add(e.id); e.taken=true; STATE.flash=0.12;
+      STATE.treasuresTaken.add(e.id); e.taken=true;
       if(v>=1000) AudioBus.big(); else AudioBus.pickup();
     }
   }
