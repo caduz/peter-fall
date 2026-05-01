@@ -8,14 +8,23 @@ A retro pixel-art platformer for casual fun. Jump, climb vines, avoid pits, and 
 
 👉 [Play in your browser](https://caduz.github.io/peter-fall)
 
+Works on desktop and mobile. On mobile, rotate to landscape for the best experience — on-screen buttons appear automatically.
+
 ## Controls
+
+**Desktop**
 
 | Key | Action |
 |-----|--------|
 | ← → | Move |
 | ↑ / Space | Jump |
-| ↑ ↓ | Climb ladder / vine |
+| ↑ ↓ | Climb vine |
+| Enter | Start / Pause |
 | M | Mute |
+
+**Mobile**
+
+On-screen ◀ ▶ buttons to move, **B** to jump, and ▶/⏸ to start/pause.
 
 ## About
 
