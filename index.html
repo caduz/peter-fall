@@ -155,7 +155,7 @@
   <div class="tbtn" id="tbtn-left">&#9664;</div>
   <div class="tbtn" id="tbtn-right">&#9654;</div>
   <div class="tbtn" id="tbtn-jump">B</div>
-  <div class="tbtn" id="tbtn-start">&#9646;&#9646;</div>
+  <div class="tbtn" id="tbtn-start">&#9654;</div>
 </div>
 
 <div class="help">
@@ -840,6 +840,9 @@ function frame(now){
   if(STATE.mode==='TITLE')         drawTitle();
   else if(STATE.mode==='PAUSED')   drawPaused();
   else if(STATE.mode==='GAMEOVER') drawGameOver();
+
+  const startBtn = document.getElementById('tbtn-start');
+  if (startBtn) startBtn.innerHTML = (STATE.mode==='PLAYING'||STATE.mode==='DYING') ? '&#9646;&#9646;' : '&#9654;';
 
   requestAnimationFrame(frame);
 }
