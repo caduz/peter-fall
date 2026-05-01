@@ -83,7 +83,6 @@
     -webkit-tap-highlight-color: transparent;
     /* retro pixel-art button style */
     background: #1a2a1a;
-    opacity: 0.75;
     border-top:    3px solid #4a6a3a;
     border-left:   3px solid #4a6a3a;
     border-right:  3px solid #0a1208;
@@ -155,7 +154,7 @@
   <div class="tbtn" id="tbtn-left">&#9664;</div>
   <div class="tbtn" id="tbtn-right">&#9654;</div>
   <div class="tbtn" id="tbtn-jump">B</div>
-  <div class="tbtn" id="tbtn-start">&#9654;</div>
+  <div class="tbtn" id="tbtn-start">&#9646;&#9646;</div>
 </div>
 
 <div class="help">
@@ -223,7 +222,7 @@ function layoutTouchButtons(dw, dh) {
   const cx = Math.round((window.innerWidth  - dw) / 2);
   const cy = Math.round((window.innerHeight - dh) / 2);
 
-  const bottom = cy + dh + mg;
+  const bottom = cy + dh - mg - bs;
 
   function place(el, x, y, w, h, fs) {
     el.style.left   = x + 'px';
@@ -840,12 +839,6 @@ function frame(now){
   if(STATE.mode==='TITLE')         drawTitle();
   else if(STATE.mode==='PAUSED')   drawPaused();
   else if(STATE.mode==='GAMEOVER') drawGameOver();
-
-  // Update start button icon: play on title/gameover, pause during play
-  const startBtn = document.getElementById('tbtn-start');
-  if (startBtn) {
-    startBtn.innerHTML = (STATE.mode==='PLAYING'||STATE.mode==='DYING') ? '&#9646;&#9646;' : '&#9654;';
-  }
 
   requestAnimationFrame(frame);
 }
