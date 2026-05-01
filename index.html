@@ -38,6 +38,33 @@
     top: 0; left: 0;
     pointer-events: none;
   }
+  @media (pointer: coarse) and (orientation: landscape) {
+    #app {
+      /* leave 140px at bottom for touch controls */
+      bottom: 140px;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+    .stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    canvas#game, canvas#ui {
+      /* CSS handles scaling — canvas stays 320×192 internally */
+      width: auto !important;
+      height: auto !important;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 320 / 192;
+    }
+    canvas#ui {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
   .help {
     position: fixed;
     bottom: 10px; left: 50%;
@@ -99,8 +126,6 @@
   @media (pointer: coarse) {
     #touch-controls { display: block; }
     .help { display: none; }
-    .stage { border: none; border-radius: 0; box-shadow: none; }
-    #app { align-items: flex-start; }
   }
 
   /* ── portrait warning ── */
@@ -178,25 +203,33 @@ let ux = uiCanvas.getContext('2d');
 let S = 1; // current display scale factor
 
 function fitStage() {
-  const touch = window.matchMedia('(pointer: coarse)').matches;
-  const aw = window.innerWidth;
-  const ah = window.innerHeight - (touch ? 140 : 0);
-  if (touch) {
-    // fractional scale to fill available space exactly
-    S = Math.max(1, Math.min(aw / W, ah / H));
+  const touchLandscape = window.matchMedia('(pointer: coarse) and (orientation: landscape)').matches;
+  if (touchLandscape) {
+    // CSS fills the stage; read actual rendered size after layout
+    requestAnimationFrame(() => {
+      const rect = canvas.getBoundingClientRect();
+      const dw = Math.round(rect.width)  || window.innerWidth;
+      const dh = Math.round(rect.height) || (window.innerHeight - 140);
+      S = dw / W;
+      uiCanvas.width  = dw;
+      uiCanvas.height = dh;
+      uiCanvas.style.width  = dw + 'px';
+      uiCanvas.style.height = dh + 'px';
+      ux = uiCanvas.getContext('2d');
+    });
   } else {
-    // desktop: integer scale only, with padding
     const pad = 60;
-    S = Math.max(1, Math.min(Math.floor((aw - pad) / W), Math.floor((ah - pad) / H)));
+    const aw = window.innerWidth - pad, ah = window.innerHeight - pad;
+    S = Math.max(1, Math.min(Math.floor(aw / W), Math.floor(ah / H)));
+    const dw = W * S, dh = H * S;
+    canvas.style.width  = dw + 'px';
+    canvas.style.height = dh + 'px';
+    uiCanvas.width  = dw;
+    uiCanvas.height = dh;
+    uiCanvas.style.width  = dw + 'px';
+    uiCanvas.style.height = dh + 'px';
+    ux = uiCanvas.getContext('2d');
   }
-  const dw = W * S, dh = H * S;
-  canvas.style.width  = dw + 'px';
-  canvas.style.height = dh + 'px';
-  uiCanvas.width  = dw;
-  uiCanvas.height = dh;
-  uiCanvas.style.width  = dw + 'px';
-  uiCanvas.style.height = dh + 'px';
-  ux = uiCanvas.getContext('2d');
 }
 window.addEventListener('resize', fitStage);
 fitStage();
