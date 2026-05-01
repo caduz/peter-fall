@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <title>Peter Fall</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <meta name="screen-orientation" content="landscape" />
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; touch-action: none; }
   html, body {
-    margin: 0; padding: 0; height: 100%;
+    margin: 0; padding: 0; width: 100%; height: 100%;
     background: #0c1410;
     overflow: hidden;
     user-select: none;
@@ -27,6 +27,7 @@
     box-shadow: 0 20px 60px rgba(0,0,0,.7);
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    flex-shrink: 0;
   }
   canvas#game {
     display: block;
@@ -37,31 +38,6 @@
     position: absolute;
     top: 0; left: 0;
     pointer-events: none;
-  }
-  @media (pointer: coarse) and (orientation: landscape) {
-    #app {
-      align-items: stretch;
-      justify-content: stretch;
-    }
-    .stage {
-      flex: 1;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: none; border-radius: 0; box-shadow: none;
-    }
-    canvas#game {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: contain;
-    }
-    canvas#ui {
-      position: absolute;
-      inset: 0;
-      width: 100% !important;
-      height: 100% !important;
-    }
   }
   .help {
     position: fixed;
@@ -75,6 +51,7 @@
     text-align: center;
     white-space: nowrap;
     font-family: ui-monospace, Menlo, Consolas, monospace;
+    touch-action: auto;
   }
   .help kbd {
     display: inline-block;
@@ -93,37 +70,36 @@
   #touch-controls {
     display: none;
     position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 140px;
+    inset: 0;
     pointer-events: none;
     z-index: 10;
   }
   .tbtn {
     position: absolute;
-    width: 64px; height: 64px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.12);
-    border: 2px solid rgba(255,255,255,0.22);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 24px;
-    color: rgba(255,255,255,0.55);
     pointer-events: all;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.05s;
+    /* retro pixel-art button style */
+    background: #1a2a1a;
+    border-top:    3px solid #4a6a3a;
+    border-left:   3px solid #4a6a3a;
+    border-right:  3px solid #0a1208;
+    border-bottom: 3px solid #0a1208;
+    color: #c8b048;
+    font-family: "Press Start 2P", monospace;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    image-rendering: pixelated;
+    transition: filter 0.04s;
   }
-  .tbtn:active, .tbtn.pressed {
-    background: rgba(255,255,255,0.28);
-  }
-  #tbtn-left  { bottom: 20px; left: 16px; }
-  #tbtn-right { bottom: 20px; left: 96px; }
-  #tbtn-jump  { bottom: 20px; right: 16px; width: 74px; height: 74px; border-radius: 50%; font-size: 28px; }
-  #tbtn-start { bottom: 20px; left: 50%; transform: translateX(-50%); width: 52px; height: 52px; font-size: 18px; }
-  @media (pointer: coarse) {
-    #touch-controls { display: block; }
-    .help { display: none; }
+  .tbtn.pressed {
+    border-top:    3px solid #0a1208;
+    border-left:   3px solid #0a1208;
+    border-right:  3px solid #4a6a3a;
+    border-bottom: 3px solid #4a6a3a;
+    filter: brightness(1.4);
   }
 
   /* ── portrait warning ── */
@@ -153,6 +129,11 @@
   @media (pointer: coarse) and (orientation: portrait) {
     #portrait-overlay { display: flex; }
   }
+  @media (pointer: coarse) {
+    #touch-controls { display: block; }
+    .help { display: none; }
+    .stage { border: none; border-radius: 0; box-shadow: none; }
+  }
 </style>
 </head>
 <body>
@@ -172,7 +153,7 @@
 <div id="touch-controls">
   <div class="tbtn" id="tbtn-left">&#9664;</div>
   <div class="tbtn" id="tbtn-right">&#9654;</div>
-  <div class="tbtn" id="tbtn-jump">&#11014;</div>
+  <div class="tbtn" id="tbtn-jump">B</div>
   <div class="tbtn" id="tbtn-start">&#9646;&#9646;</div>
 </div>
 
@@ -194,49 +175,77 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-// UI canvas: same pixel dimensions as the displayed game, so 1px here = 1 screen px.
-// Text is drawn here at real sizes — crisp regardless of game scale.
 const uiCanvas = document.getElementById('ui');
 let ux = uiCanvas.getContext('2d');
-let S = 1; // current display scale factor
+let S = 1;
 
 function fitStage() {
-  const touchLandscape = window.matchMedia('(pointer: coarse) and (orientation: landscape)').matches;
-  if (touchLandscape) {
-    // CSS fills the screen; sync uiCanvas to the rendered canvas size after layout
-    requestAnimationFrame(() => {
-      const rect = canvas.getBoundingClientRect();
-      const dw = Math.round(rect.width);
-      const dh = Math.round(rect.height);
-      S = dw / W;
-      uiCanvas.width  = dw;
-      uiCanvas.height = dh;
-      uiCanvas.style.width  = dw + 'px';
-      uiCanvas.style.height = dh + 'px';
-      ux = uiCanvas.getContext('2d');
-    });
+  const touch = window.matchMedia('(pointer: coarse)').matches;
+  let aw, ah;
+  if (touch) {
+    // Use full viewport — buttons are overlaid on top
+    aw = window.innerWidth;
+    ah = window.innerHeight;
+    S = Math.min(aw / W, ah / H);
   } else {
     const pad = 60;
-    const aw = window.innerWidth - pad, ah = window.innerHeight - pad;
+    aw = window.innerWidth  - pad;
+    ah = window.innerHeight - pad;
     S = Math.max(1, Math.min(Math.floor(aw / W), Math.floor(ah / H)));
-    const dw = W * S, dh = H * S;
-    canvas.style.width  = dw + 'px';
-    canvas.style.height = dh + 'px';
-    uiCanvas.width  = dw;
-    uiCanvas.height = dh;
-    uiCanvas.style.width  = dw + 'px';
-    uiCanvas.style.height = dh + 'px';
-    ux = uiCanvas.getContext('2d');
   }
+  const dw = Math.round(W * S), dh = Math.round(H * S);
+  canvas.style.width  = dw + 'px';
+  canvas.style.height = dh + 'px';
+  uiCanvas.width  = dw;
+  uiCanvas.height = dh;
+  uiCanvas.style.width  = dw + 'px';
+  uiCanvas.style.height = dh + 'px';
+  ux = uiCanvas.getContext('2d');
+
+  if (touch) layoutTouchButtons(dw, dh);
 }
 window.addEventListener('resize', fitStage);
+
+// Position touch buttons relative to the rendered canvas size
+function layoutTouchButtons(dw, dh) {
+  const btn = sz => Math.round(Math.min(dw, dh) * sz);
+  const bs = btn(0.13);   // button size
+  const mg = btn(0.04);   // margin from edge
+  const pad = Math.round(bs * 0.18);
+
+  const left  = document.getElementById('tbtn-left');
+  const right = document.getElementById('tbtn-right');
+  const jump  = document.getElementById('tbtn-jump');
+  const start = document.getElementById('tbtn-start');
+
+  // canvas is centered in the viewport
+  const cx = Math.round((window.innerWidth  - dw) / 2);
+  const cy = Math.round((window.innerHeight - dh) / 2);
+
+  const bottom = cy + dh - mg - bs;
+
+  function place(el, x, y, w, h, fs) {
+    el.style.left   = x + 'px';
+    el.style.top    = y + 'px';
+    el.style.width  = w + 'px';
+    el.style.height = h + 'px';
+    el.style.fontSize = fs + 'px';
+  }
+
+  place(left,  cx + mg,          bottom, bs, bs, Math.round(bs * 0.45));
+  place(right, cx + mg + bs + pad, bottom, bs, bs, Math.round(bs * 0.45));
+  place(jump,  cx + dw - mg - bs, bottom, bs, bs, Math.round(bs * 0.38));
+  place(start, cx + Math.round(dw/2) - Math.round(bs*0.4),
+               bottom + Math.round((bs - bs*0.8)/2),
+               Math.round(bs*0.8), Math.round(bs*0.8), Math.round(bs * 0.28));
+}
+
 fitStage();
 
 // Request landscape lock on touch devices (silently ignored if unsupported)
 if ('ontouchstart' in window && screen.orientation && screen.orientation.lock) {
   screen.orientation.lock('landscape').catch(() => {});
 }
-
 
 // Wait for Press Start 2P before first frame
 let fontReady = false;
@@ -756,8 +765,6 @@ function drawHeroIcon(x,y){
   px(x+1,y+3,4,3,PAL.hero_shirt); px(x+1,y+6,2,2,PAL.hero_pants); px(x+3,y+6,2,2,PAL.hero_pants);
 }
 
-// txt: draw on the high-res UI canvas.
-// x/y are logical game coords; size is logical px — both scaled by S to match display.
 function txt(str, x, y, color, size, align, baseline){
   ux.fillStyle   = color;
   ux.font        = Math.round(size * S * 0.75) + 'px ' + FONT;
@@ -768,15 +775,11 @@ function txt(str, x, y, color, size, align, baseline){
 
 function drawHUD(){
   ux.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
-  // score
   txt(String(STATE.score).padStart(6,'0'), 4, 4, PAL.ui_text, 8);
-  // timer
   const m=Math.floor(STATE.timer/60), s=Math.floor(STATE.timer%60);
   txt('|| '+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'), 4, 16, PAL.ui_text, 8);
-  // screen name centred
   txt(SCREENS[STATE.screenIdx].name.toUpperCase(), W/2, 3, PAL.ui_dim, 6, 'center');
   txt((STATE.screenIdx+1)+'/'+SCREENS.length,      W/2, 13, PAL.ui_dim, 6, 'center');
-  // lives (pixel art stays on game canvas)
   for(let i=0;i<STATE.lives;i++) drawHeroIcon(W-14-i*12, 4);
 }
 
@@ -784,11 +787,9 @@ function drawHUD(){
 function drawTitle(){
   drawBackground();
   ctx.fillStyle='rgba(0,0,0,0.60)'; ctx.fillRect(20,44,W-40,110);
-  // pixel hero on game canvas
   const hx=W/2-5, hy=94;
   px(hx+1,hy,6,2,PAL.hero_hair); px(hx+1,hy+2,6,4,PAL.hero_skin);
   px(hx+1,hy+6,6,5,PAL.hero_shirt); px(hx+2,hy+12,3,6,PAL.hero_pants); px(hx+5,hy+12,3,6,PAL.hero_pants);
-  // text on UI canvas
   ux.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
   txt('PETER FALL',              W/2,  52, PAL.ui_text, 16, 'center');
   txt('JUNGLE RUINS EXPEDITION', W/2,  76, PAL.ui_dim,   7, 'center');
@@ -838,12 +839,10 @@ function frame(now){
   if(STATE.mode==='TITLE')         drawTitle();
   else if(STATE.mode==='PAUSED')   drawPaused();
   else if(STATE.mode==='GAMEOVER') drawGameOver();
-  // PLAYING/DYING: drawHUD() already handled ux
 
   requestAnimationFrame(frame);
 }
 
-// Start loop once font is ready (or after 1s fallback)
 function waitForFont(){
   if(fontReady||STATE.t>1) requestAnimationFrame(frame);
   else setTimeout(waitForFont,50);
