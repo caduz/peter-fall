@@ -40,8 +40,6 @@
   }
   @media (pointer: coarse) and (orientation: landscape) {
     #app {
-      /* leave 140px at bottom for touch controls */
-      bottom: 140px;
       align-items: stretch;
       justify-content: stretch;
     }
@@ -50,13 +48,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      border: none; border-radius: 0; box-shadow: none;
     }
-    canvas#game, canvas#ui {
-      /* CSS handles scaling — canvas stays 320×192 internally */
+    canvas#game {
       width: auto !important;
-      height: auto !important;
+      height: 100% !important;
       max-width: 100%;
-      max-height: 100%;
       aspect-ratio: 320 / 192;
     }
     canvas#ui {
@@ -205,11 +202,11 @@ let S = 1; // current display scale factor
 function fitStage() {
   const touchLandscape = window.matchMedia('(pointer: coarse) and (orientation: landscape)').matches;
   if (touchLandscape) {
-    // CSS fills the stage; read actual rendered size after layout
+    // CSS fills the screen; sync uiCanvas to the rendered canvas size after layout
     requestAnimationFrame(() => {
       const rect = canvas.getBoundingClientRect();
-      const dw = Math.round(rect.width)  || window.innerWidth;
-      const dh = Math.round(rect.height) || (window.innerHeight - 140);
+      const dw = Math.round(rect.width);
+      const dh = Math.round(rect.height);
       S = dw / W;
       uiCanvas.width  = dw;
       uiCanvas.height = dh;
